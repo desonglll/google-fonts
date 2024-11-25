@@ -49,7 +49,7 @@ def install_fonts(names: list[str], force=False):
     elif system == "Darwin":  # macOS
         install_dir = os.path.expanduser("~/Library/Fonts")
     elif system == "Windows":
-        install_dir = os.path.expanduser("C:\\Windows\\Fonts")
+        install_dir = os.path.join(os.environ['LOCALAPPDATA'], 'Microsoft', 'Windows', 'Fonts')
     else:
         raise OSError("Unsupported operating system")
 

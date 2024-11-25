@@ -34,6 +34,7 @@ def fetch_ofl_list_json(api_url=API_URL):
     else:
         print(f"Failed to fetch github with token: {os.getenv('ACCESS_TOKEN')}")
         print(f"Please set github token with: `googlefonts config --token your_token`")
+        print(f"Or you can temporary use github token with: `googlefonts list --token your_token`")
         exit(1)
 
 
@@ -70,7 +71,8 @@ def get_ttf_download_url_list_json(url_content):
                 download_url_list.append(item["download_url"])
         return download_url_list
     else:
-        return None
+        print("\033[31mFailed to get download urls. Please retry!\033[0m")
+        exit(-1)
 
 
 def get_font_names(ofl_font_json_list):
@@ -87,11 +89,9 @@ def fetch_ttf_url_download_list_by_name(font_name, force=False):
 
     all_font_names = get_font_names(ofl_list)
     if font_name not in all_font_names and not force:
-        print(f"{font_name} not found in ofl_list")
-        print("Using following font names:")
-        for font_name in all_font_names:
-            print(font_name)
-        return None
+        print(f"\033[31m{font_name}\033[0m not found in ofl_list")
+        print("\033[33mUsing following command to see font list: `google-fonts list`\033[0m")
+        return exit(-1)
     for ofl in ofl_list:
         if force:
             url = f"https://api.github.com/repos/google/fonts/contents/ofl/{font_name}?ref=main"
@@ -102,6 +102,9 @@ def fetch_ttf_url_download_list_by_name(font_name, force=False):
         url_content = json.loads(
             requests.get(url,
                          headers=headers).text)
+        if url_content["status"] == '404':
+            print(f"\033[31mFailed to get download urls for {font_name}. Please retry!\033[0m")
+            exit(-1)
         tqdm.write(f"Successfully fetched fonts {font_name} from formulas")
         download_list = []
         for download in get_ttf_download_url_list_json(url_content):
@@ -114,7 +117,8 @@ def fetch_ttf_url_download_list_by_name(font_name, force=False):
 
         if download_list:
             return download_list
-        return None
+        else:
+            exit(-1)
 
 
 if __name__ == '__main__':
