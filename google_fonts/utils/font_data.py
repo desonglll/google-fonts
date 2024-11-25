@@ -1,4 +1,5 @@
 import os
+from http.client import responses
 from urllib.parse import unquote
 
 import requests
@@ -99,12 +100,11 @@ def fetch_ttf_url_download_list_by_name(font_name, force=False):
             url = ofl["url"]
         tqdm.write(f"Fetching fonts {font_name} from formulas")
         headers = {"Authorization": f"token {os.getenv("ACCESS_TOKEN")}"}
-        url_content = json.loads(
-            requests.get(url,
-                         headers=headers).text)
-        if url_content["status"] == '404':
+        resp = requests.get(url, headers=headers)
+        if resp.status_code == 404:
             print(f"\033[31mFailed to get download urls for {font_name}. Please retry!\033[0m")
             exit(-1)
+        url_content = json.loads(resp.text)
         tqdm.write(f"Successfully fetched fonts {font_name} from formulas")
         download_list = []
         for download in get_ttf_download_url_list_json(url_content):

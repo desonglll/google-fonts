@@ -9,7 +9,7 @@ from google_fonts.utils.font_data import fetch_ttf_url_download_list_by_name, fe
 
 def download_and_install_font(font_name, font_url, install_dir, max_retries=3, retry_delay=2):
     """
-    Download and install a font from the given URL with automatic retries.
+    Download and install a font from the given URL with a progress bar and automatic retries.
     """
     retry_count = 0
 
@@ -17,13 +17,23 @@ def download_and_install_font(font_name, font_url, install_dir, max_retries=3, r
         try:
             tqdm.write(f"Downloading {font_name} (Attempt {retry_count + 1}/{max_retries})...")
             response = requests.get(font_url, stream=True, timeout=10)
-            if response.status_code != 200:
-                exit(-1)
+            response.raise_for_status()
+
+            # Get total file size from headers
+            total_size = int(response.headers.get('content-length', 0))
 
             # Save the font file locally
             font_path = os.path.join(install_dir, f"{font_name}")  # Use .otf if necessary
-            with open(font_path, "wb") as f:
-                copyfileobj(response.raw, f)
+            with open(font_path, "wb") as f, tqdm(
+                    desc=f"Installing {font_name}",
+                    total=total_size,
+                    unit='B',
+                    unit_scale=True,
+                    unit_divisor=1024,
+            ) as bar:
+                for chunk in response.iter_content(chunk_size=1024):
+                    f.write(chunk)
+                    bar.update(len(chunk))
 
             tqdm.write(f"{font_name} installed successfully at {install_dir}!")
             return  # Exit function on success
@@ -34,7 +44,7 @@ def download_and_install_font(font_name, font_url, install_dir, max_retries=3, r
                 tqdm.write(f"Retrying in {retry_delay} seconds...")
                 time.sleep(retry_delay)
             else:
-                print(f"Failed to install {font_name} after {max_retries} attempts.")
+                tqdm.write(f"Failed to install {font_name} after {max_retries} attempts.")
                 break
 
 
@@ -59,7 +69,7 @@ def install_fonts(names: list[str], force=False):
     for name in names:
         for item in fetch_ttf_url_download_list_by_name(name, force=force):
             all_list_to_download.append(item)
-    for item in tqdm(all_list_to_download):
+    for item in all_list_to_download:
         download_and_install_font(item["name"], item["download_url"], install_dir)
 
 
