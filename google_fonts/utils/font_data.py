@@ -7,10 +7,8 @@ import json
 
 from tqdm import tqdm
 
-API_URL = "https://api.github.com/repos/google/fonts/contents/ofl"
 
-
-def fetch_ofl_list_json(api_url=API_URL):
+def fetch_ofl_list_json(api_url="https://api.github.com/repos/google/fonts/contents/ofl"):
     """
     :param api_url:
     :return:
@@ -83,42 +81,41 @@ def get_font_names(ofl_font_json_list):
     return font_names
 
 
-def fetch_ttf_url_download_list_by_name(font_name, force=False):
-    tqdm.write("Fetching fonts formulas from https://api.github.com/repos/google/fonts/contents/ofl")
-    ofl_list = fetch_ofl_list_json(API_URL)
-    tqdm.write("Successfully fetched fonts formulas")
+def fetch_ttf_url_download_list_by_name(ofl_list, font_name, force=False):
+    url = None
+    if force:
+        url = f"https://api.github.com/repos/google/fonts/contents/ofl/{font_name}?ref=main"
+    else:
+        for ofl in ofl_list:
+            if ofl["name"] == font_name:
+                print(f"font_name: {font_name}")
+                print(f"name: {ofl['name']}")
+                url = ofl["url"]
+                print(f"url: {url}")
+    if url is None:
+        raise Exception(f"Can not find url for font name: {font_name}")
 
-    all_font_names = get_font_names(ofl_list)
-    if font_name not in all_font_names and not force:
-        print(f"\033[31m{font_name}\033[0m not found in ofl_list")
-        print("\033[33mUsing following command to see font list: `google-fonts list`\033[0m")
-        return exit(-1)
-    for ofl in ofl_list:
-        if force:
-            url = f"https://api.github.com/repos/google/fonts/contents/ofl/{font_name}?ref=main"
-        else:
-            url = ofl["url"]
-        tqdm.write(f"Fetching fonts {font_name} from formulas")
-        headers = {"Authorization": f"token {os.getenv("ACCESS_TOKEN")}"}
-        resp = requests.get(url, headers=headers)
-        if resp.status_code == 404:
-            print(f"\033[31mFailed to get download urls for {font_name}. Please retry!\033[0m")
-            exit(-1)
-        url_content = json.loads(resp.text)
-        tqdm.write(f"Successfully fetched fonts {font_name} from formulas")
-        download_list = []
-        for download in get_ttf_download_url_list_json(url_content):
-            name = unquote(download.split("/")[-1])
-            download_url = download
-            download_list.append({
-                "name": name,
-                "download_url": download_url,
-            })
+    tqdm.write(f"Fetching fonts {font_name} from formulas")
+    headers = {"Authorization": f"token {os.getenv("ACCESS_TOKEN")}"}
+    resp = requests.get(url, headers=headers)
+    if resp.status_code == 404:
+        print(f"\033[31mFailed to get download urls for {font_name}. Please retry!\033[0m")
+        exit(-1)
+    url_content = json.loads(resp.text)
+    tqdm.write(f"Successfully fetched fonts {font_name} from formulas")
+    download_list = []
+    for download in get_ttf_download_url_list_json(url_content):
+        name = unquote(download.split("/")[-1])
+        download_url = download
+        download_list.append({
+            "name": name,
+            "download_url": download_url,
+        })
 
-        if download_list:
-            return download_list
-        else:
-            exit(-1)
+    if download_list:
+        return download_list
+    else:
+        exit(-1)
 
 
 if __name__ == '__main__':

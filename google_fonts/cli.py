@@ -1,4 +1,5 @@
 import os
+import platform
 from typing import List
 
 import typer
@@ -18,7 +19,7 @@ def install_fonts_cli(names: List[str] = typer.Argument(None, help="Names of the
                       install_all: bool = typer.Option(False, "--all", help="Install all available fonts."),
                       force: bool = typer.Option(False, "--force/--no-force",
                                                  help="Force installation of fonts. Using name in https://github.com/google/fonts/tree/main/ofl/"),
-                      github_token: str = typer.Option(None, "--token", help="GitHub Access Token for authentication.")
+                      github_token: str = typer.Option(None, "--token", help="GitHub Access Token for authentication."),
                       ):
     if github_token is not None:
         os.environ["ACCESS_TOKEN"] = github_token
@@ -32,6 +33,8 @@ def install_fonts_cli(names: List[str] = typer.Argument(None, help="Names of the
         return
 
     install_fonts(names)
+    if platform.system() == "Linux":
+        os.system("fc-cache -fv")
 
 
 @app.command(name="list",
