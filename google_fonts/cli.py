@@ -68,5 +68,12 @@ def config(
             console.print("No GitHub Access Token found.", style="red")
 
 
+@app.command(name="author", help="This package is written by desonglll. See my github on github.com/desonglll.")
+def author():
+    print("This package is written by desonglll.")
+    print("See my github on github.com/desonglll.")
+    pass
+
+
 if __name__ == "__main__":
     app()
